@@ -1,27 +1,30 @@
 import express from "express";
-import fetch from "node-fetch";
+import { Client } from "@gradio/client";
 
 const app = express();
 app.use(express.json());
 
+let client;
+(async () => {
+  client = await Client.connect("amd/gpt-oss-120b-chatbot");
+})();
+
 app.post("/chat", async (req, res) => {
   const { message, system_prompt = "You are a helpful assistant.", temperature = 0.7 } = req.body;
 
+  if (!client) {
+    return res.status(503).json({ error: "Chat client is not ready yet" });
+  }
+
   try {
-    const response = await fetch("https://amd-gpt-oss-120b-chatbot.hf.space/run/predict", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: [message, system_prompt, temperature] }),
+    const result = await client.predict("/chat", {
+      message,
+      system_prompt,
+      temperature,
     });
 
-    const result = await response.json();
-    console.log("Hugging Face API response:", result);
-
-    if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
-      return res.status(500).json({ error: "Invalid response from chatbot API", raw: result });
-    }
-
-    res.json({ response: result.data[0] });
+    // result.data contains the chatbot response
+    res.json({ response: result.data });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to contact chatbot" });
