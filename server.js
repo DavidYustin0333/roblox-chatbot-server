@@ -1,3 +1,9 @@
+import express from "express";
+import fetch from "node-fetch";
+
+const app = express();
+app.use(express.json());
+
 app.post("/chat", async (req, res) => {
   const { message, system_prompt = "You are a helpful assistant.", temperature = 0.7 } = req.body;
 
@@ -21,3 +27,6 @@ app.post("/chat", async (req, res) => {
     res.status(500).json({ error: "Failed to contact chatbot" });
   }
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
